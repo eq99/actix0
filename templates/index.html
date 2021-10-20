@@ -4,20 +4,44 @@
 <head>
     <meta charset="utf-8" />
     <title>Welcome to MarkX</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 </head>
 
 <body>
-    <h1>Welcome!</h1>
-    <ol>
-        {% for blog in blogs %}
-        <li>
-            <a href='/blogs/{{blog.name | replace(from=" ", to="-") }}'>
-                {{blog.name}} |
-                {{blog.modified|date(format="%Y-%m-%d %H:%M")}}
-            </a>
-        </li>
-        {% endfor %}
-    </ol>
+    <header class="p-3 bg-light">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+                <span class="fs-4">MarkX Blog</span>
+
+                <form class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3 ms-auto">
+                    <input type="search" class="form-control form-control-dark" placeholder="Search..."
+                        aria-label="Search">
+                </form>
+
+                <div class="text-end">
+                    <button type="button" class="btn btn-primary">Login</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container-fluid">
+        <div class="row">
+            <ol class="offset-1">
+                {% for blog in blogs %}
+                <li class="my-3">
+                    <a href='/blogs/{{blog.name | replace(from=" ", to="-") }}'>
+                        <span>{{blog.name}}</span>
+                        <span>&#8226&#8226&#8226&#8226&#8226&#8226</span>
+                        <span>{{blog.modified|date(format="%Y-%m-%d %H:%M")}}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+    </main>
+
 </body>
 
 </html>
