@@ -4,10 +4,9 @@ use actix_web::http::StatusCode;
 use actix_web::middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers};
 use actix_web::{error, get, middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use chrono::offset::Utc;
-use chrono::{DateTime, TimeZone};
+use chrono::DateTime;
 use markx::html::mark2html;
 use serde::Serialize;
-use std::collections::HashMap;
 use std::fs;
 use tera::Tera;
 
