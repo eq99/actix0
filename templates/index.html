@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <meta charset="utf-8" />
-  <title>Actix web</title>
+    <meta charset="utf-8" />
+    <title>Welcome to MarkX</title>
 </head>
+
 <body>
-  <h1>Welcome!</h1>
-  <p>
-    <h3>What is your name?</h3>
-    <form>
-      <input type="text" name="name" /><br/>
-      <p><input type="submit"></p>
-    </form>
-  </p>
+    <h1>Welcome!</h1>
+    <ol>
+        {% for blog in blogs %}
+        <li>
+            <a href='/blogs/{{blog.name | replace(from=" ", to="-") }}'>
+                {{blog.name}} |
+                {{blog.modified|date(format="%Y-%m-%d %H:%M")}}
+            </a>
+        </li>
+        {% endfor %}
+    </ol>
 </body>
+
 </html>

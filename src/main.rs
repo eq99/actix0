@@ -1,25 +1,24 @@
-use chrono::offset::Utc;
-use chrono::DateTime;
-use std::collections::HashMap;
-use std::fs;
 use actix_http::{body::Body, Response};
 use actix_web::dev::ServiceResponse;
 use actix_web::http::StatusCode;
 use actix_web::middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers};
 use actix_web::{error, get, middleware, web, App, Error, HttpResponse, HttpServer, Result};
+use chrono::offset::Utc;
+use chrono::{DateTime, TimeZone};
+use markx::html::mark2html;
+use serde::Serialize;
+use std::collections::HashMap;
+use std::fs;
 use tera::Tera;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct Blog {
     name: String,
     modified: DateTime<Utc>,
 }
 
 // store tera template in application state
-async fn index(
-    tmpl: web::Data<tera::Tera>,
-    query: web::Query<HashMap<String, String>>,
-) -> Result<HttpResponse, Error> {
+async fn index(tmpl: web::Data<tera::Tera>) -> Result<HttpResponse, Error> {
     let files = fs::read_dir("blogs")?;
 
     let blogs: Vec<_> = files
@@ -33,26 +32,34 @@ async fn index(
             }
         })
         .collect();
-    println!("{:?}", blogs);
 
-    let s = if let Some(name) = query.get("name") {
-        // submitted form
-        let mut ctx = tera::Context::new();
-        ctx.insert("name", &name.to_owned());
-        ctx.insert("text", &"Welcome!".to_owned());
-        tmpl.render("user.html", &ctx)
-            .map_err(|_| error::ErrorInternalServerError("Template error"))?
-    } else {
-        tmpl.render("index.html", &tera::Context::new())
-            .map_err(|_| error::ErrorInternalServerError("Template error"))?
-    };
+    let mut ctx = tera::Context::new();
+    ctx.insert("blogs", &blogs);
 
-    Ok(HttpResponse::Ok().content_type("text/html").body(s))
+    let res = tmpl
+        .render("index.html", &ctx)
+        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
+
+    Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
-#[get("/users/{user_id}/{friend}")] // <- define path parameters
-async fn frend(web::Path((user_id, friend)): web::Path<(u32, String)>) -> Result<String> {
-    Ok(format!("Welcome {}, user_id {}!", friend, user_id))
+#[get("/blogs/{blog_slot}")] // <- define path parameters
+async fn frend(
+    tmpl: web::Data<tera::Tera>,
+    web::Path(blog_slot): web::Path<String>,
+) -> Result<HttpResponse, Error> {
+    let blog_file_name = format!("blogs/{}.md", blog_slot.replace("-", " "));
+    let rendered_blog = mark2html(&fs::read_to_string(&blog_file_name)?);
+
+    let mut ctx = tera::Context::new();
+    ctx.insert("title", &blog_slot.replace("-", " "));
+    ctx.insert("rendered_blog", &rendered_blog);
+
+    let res = tmpl
+        .render("blog.html", &ctx)
+        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
+
+    Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
 #[actix_web::main]
