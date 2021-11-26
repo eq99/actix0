@@ -1,12 +1,13 @@
+use actix_files;
 use actix_http::{body::Body, Response};
 use actix_web::dev::ServiceResponse;
 use actix_web::http::StatusCode;
 use actix_web::middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers};
-use actix_web::{error, get, middleware, web, App, Error, HttpResponse, HttpServer, Result};
+use actix_web::{error, get, middleware, post, web, App, Error, HttpResponse, HttpServer, Result};
 use chrono::offset::Utc;
 use chrono::DateTime;
 use markx::html::mark2html;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use tera::Tera;
 
@@ -43,7 +44,7 @@ async fn index(tmpl: web::Data<tera::Tera>) -> Result<HttpResponse, Error> {
 }
 
 #[get("/blogs/{blog_slot}")] // <- define path parameters
-async fn frend(
+async fn friend(
     tmpl: web::Data<tera::Tera>,
     web::Path(blog_slot): web::Path<String>,
 ) -> Result<HttpResponse, Error> {
@@ -61,6 +62,26 @@ async fn frend(
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
+#[derive(Deserialize)]
+struct Markx {
+    content: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MarkxResponse {
+    pub msg: String,
+    pub content: String,
+}
+
+#[post("/api/markx")]
+async fn markx_post(query: web::Form<Markx>) -> Result<HttpResponse, Error> {
+    let Markx { content } = query.into_inner();
+    Ok(HttpResponse::Ok().json(MarkxResponse {
+        msg: "success".to_string(),
+        content: mark2html(&content),
+    }))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=info");
@@ -74,7 +95,9 @@ async fn main() -> std::io::Result<()> {
             .data(tera)
             .wrap(middleware::Logger::default()) // enable logger
             .service(web::resource("/").route(web::get().to(index)))
-            .service(frend)
+            .service(friend)
+            .service(markx_post)
+            .service(actix_files::Files::new("/static", ".").show_files_listing())
             .service(web::scope("").wrap(error_handlers()))
     })
     .bind("127.0.0.1:8080")?
